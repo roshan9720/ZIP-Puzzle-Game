@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ZIP Path Puzzle Game - No Backtracking</title>
+  <title>ZIP Path Puzzle Game - Custom Toast Notification</title>
   <style>
     :root {
       --bg-color: #ffffff;
@@ -48,6 +48,34 @@
       flex-direction: column;
       position: relative;
       overflow: hidden;
+    }
+
+    /* IN-APP NOTIFICATION TOAST BAR */
+    .toast-notification {
+      position: absolute;
+      top: -70px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 380px;
+      background: #ef4444;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+      z-index: 200;
+      transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .toast-notification.show {
+      top: 15px;
     }
 
     .screen {
@@ -236,6 +264,12 @@
 
   <div class="mobile-frame">
     
+    <!-- NOTIFICATION TOAST BANNER -->
+    <div id="toast-banner" class="toast-notification">
+      <span>⚠️</span>
+      <span id="toast-msg">Level Incomplete! Path must end on the last number.</span>
+    </div>
+
     <div id="home-screen" class="screen active">
       <div class="home-body">
         <div class="home-top">
@@ -312,7 +346,7 @@
           <span>Clean</span>
           <span style="font-size:0.8rem;">8 ★</span>
         </button>
-        <button class="btn-share" onclick="alert('Sharing level link...')">
+        <button class="btn-share" onclick="showToast('Link copied to clipboard!')">
           <span>➔</span>
           <span>Share</span>
         </button>
@@ -346,6 +380,19 @@
     let savedPaths = JSON.parse(localStorage.getItem('zip_saved_paths')) || {};
     let menuPage = 1;
     const levelsPerPage = 60;
+    let toastTimeout = null;
+
+    // CUSTOM TOAST NOTIFICATION FUNCTION
+    function showToast(text) {
+      const toast = document.getElementById('toast-banner');
+      document.getElementById('toast-msg').innerText = text;
+      toast.classList.add('show');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3200);
+    }
 
     function updateCoins(amount) {
       coins += amount;
@@ -502,12 +549,10 @@
       updateUI(false);
     }
 
-    // STRICT FORWARD ONLY - NO BACKTRACKING ALLOWED
     function tryAddToPath(r, c) {
       const key = `${r},${c}`;
       const cellVal = checkpoints[key] || null;
 
-      // Start line at checkpoint 1
       if (path.length === 0) {
         if (cellVal === 1) { 
           path.push({ r, c }); 
@@ -517,17 +562,13 @@
         return false;
       }
 
-      // NO BACKTRACKING / NO POPPING PREVIOUS PATH
-      // If cell is already visited, action blocked (Player gets Stuck!)
       if (path.some(p => p.r === r && p.c === c)) {
         return false; 
       }
 
-      // Must be adjacent (top/bottom/left/right)
       const head = path[path.length - 1];
       if (Math.abs(head.r - r) + Math.abs(head.c - c) !== 1) return false;
 
-      // Checkpoint sequence logic
       if (cellVal !== null) {
         const hitCheckpoints = path.map(p => checkpoints[`${p.r},${p.c}`]).filter(Boolean);
         const currentHighest = hitCheckpoints.length > 0 ? Math.max(...hitCheckpoints) : 1;
@@ -592,8 +633,14 @@
       drawSVGPath();
 
       if (checkWin && path.length === totalCells) {
+        const lastCell = path[path.length - 1];
+        const lastCellKey = `${lastCell.r},${lastCell.c}`;
+        const lastCellNum = checkpoints[lastCellKey];
+
         const hitCheckpoints = path.map(p => checkpoints[`${p.r},${p.c}`]).filter(Boolean);
-        if (hitCheckpoints.length === maxCheckpoint) {
+
+        // Win check
+        if (hitCheckpoints.length === maxCheckpoint && lastCellNum === maxCheckpoint) {
           if (currentLevel >= highestUnlocked) {
             highestUnlocked = currentLevel + 1;
             localStorage.setItem('zip_highest_unlocked', highestUnlocked);
@@ -603,6 +650,9 @@
             document.getElementById('win-msg').innerText = `Level ${currentLevel} Solved!`;
           }
           document.getElementById('win-modal').classList.add('active');
+        } else {
+          // Dynamic Notification Pop-Up
+          showToast(`Incomplete Level! Line must end on number badge (${maxCheckpoint}). Clean to retry.`);
         }
       }
     }
@@ -657,8 +707,9 @@
         path = [];
         saveCurrentPath();
         updateUI(false);
+        showToast("Board cleaned successfully!");
       } else {
-        alert("Not enough coins to Clean! Need 8 ⭐");
+        showToast("Not enough coins to Clean! Need 8 ★");
       }
     });
 
@@ -698,7 +749,7 @@
         if (targetLvl <= highestUnlocked) {
           startLevel(targetLvl);
         } else {
-          alert(`Level ${targetLvl} is locked!`);
+          showToast(`Level ${targetLvl} is locked!`);
         }
       }
     });
