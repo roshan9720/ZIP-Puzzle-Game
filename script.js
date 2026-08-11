@@ -1,7 +1,7 @@
 function generateSolvableLevel(lvl) {
   const rand = getSeededRandom(lvl);
   
-  // 1. DYNAMIC GRID SIZE BASED ON LEVEL DIFFICULTY
+  // 1. Grid Size progression based on difficulty
   let size = 4;
   if (lvl >= 6) size = 5;      // Medium: 5x5
   if (lvl >= 21) size = 6;     // Hard: 6x6
@@ -11,7 +11,7 @@ function generateSolvableLevel(lvl) {
   let fullPath = [];
   let visited = Array(size).fill(0).map(() => Array(size).fill(false));
 
-  // DFS to generate a random solvable Hamiltonian Path
+  // DFS to generate a valid solution path
   function dfs(r, c) {
     fullPath.push({ r, c });
     visited[r][c] = true;
@@ -38,7 +38,6 @@ function generateSolvableLevel(lvl) {
     attempts++;
   }
 
-  // Fallback pattern if DFS exceeds max depth
   if (fullPath.length < total) {
     fullPath = [];
     for (let r = 0; r < size; r++) {
@@ -50,18 +49,24 @@ function generateSolvableLevel(lvl) {
     }
   }
 
-  // 2. DYNAMIC NUMBER CHECKPOINTS (DIFFICULTY SCALING)
-  let numCheckpoints;
+  // 2. MIXED & RANDOMIZED NUMBER COUNT (Checkpoint Mix Engine)
+  let minNumbers = 2;
+  let maxNumbers = Math.min(14, Math.floor(total * 0.6)); // Level grid size ke mutabiq cap
+
   if (lvl <= 3) {
-    numCheckpoints = 2; // Very Easy (1 -> 2)
-  } else if (lvl <= 5) {
-    numCheckpoints = 3; // Easy (1 -> 2 -> 3)
-  } else if (lvl <= 15) {
-    numCheckpoints = Math.min(total, 4 + Math.floor((lvl - 5) / 2));
+    minNumbers = 2;
+    maxNumbers = 3; // Initial starting levels stay simple
+  } else if (lvl <= 10) {
+    minNumbers = 2;
+    maxNumbers = 6;
   } else {
-    // High difficulty density for higher levels
-    numCheckpoints = Math.min(total, Math.floor(total * 0.6) + Math.floor(lvl / 10));
+    minNumbers = 3;
+    // Mix count ranges randomly depending on level difficulty cap
+    maxNumbers = Math.min(16, 4 + Math.floor(lvl / 5));
   }
+
+  // Pick a random count between minNumbers and maxNumbers for THIS level
+  let numCheckpoints = Math.floor(rand() * (maxNumbers - minNumbers + 1)) + minNumbers;
 
   const checkpoints = {};
   const step = (total - 1) / (numCheckpoints - 1);
@@ -72,7 +77,7 @@ function generateSolvableLevel(lvl) {
     checkpoints[`${cell.r},${cell.c}`] = i + 1;
   }
 
-  // 3. WALLS / OBSTACLES DENSITY SCALING
+  // 3. WALLS / OBSTACLES PLACEMENT
   const pathSet = new Set();
   for (let i = 0; i < fullPath.length - 1; i++) {
     let a = `${fullPath[i].r},${fullPath[i].c}`;
@@ -82,10 +87,8 @@ function generateSolvableLevel(lvl) {
 
   const walls = new Set();
   
-  // Easy levels (1-5) have NO WALLS
-  if (lvl >= 6) {
-    // Walls count grows as level increases
-    let maxWalls = Math.floor(2 + (lvl - 5) * 0.8);
+  if (lvl >= 5) {
+    let maxWalls = Math.floor(1 + (lvl - 4) * 0.6);
     let wallCount = 0;
 
     for (let r = 0; r < size; r++) {
@@ -101,8 +104,7 @@ function generateSolvableLevel(lvl) {
             let b = `${n.r},${n.c}`;
             let key = a < b ? `${a}-${b}` : `${b}-${a}`;
 
-            // Place wall only if it doesn't block the correct solution
-            if (!pathSet.has(key) && rand() < 0.5 && wallCount < maxWalls) {
+            if (!pathSet.has(key) && rand() < 0.45 && wallCount < maxWalls) {
               walls.add(key);
               wallCount++;
             }
