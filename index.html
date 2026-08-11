@@ -1,770 +1,167 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ZIP Path Puzzle Game - Custom Toast Notification</title>
-  <style>
-    :root {
-      --bg-color: #ffffff;
-      --grid-bg: #ffedd5;
-      --grid-line: #fed7aa;
-      --path-color: #a85597;
-      --circle-green: #22c55e;
-      --btn-cyan: #06b6d4;
-      --btn-orange: #f97316;
-      --coin-yellow: #f59e0b;
-      --card-purple: #8b5cf6;
-      --card-locked: #94a3b8;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #0f172a;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .mobile-frame {
-      width: 100vw;
-      height: 100dvh;
-      max-width: 430px;
-      background: var(--bg-color);
-      box-shadow: 0 0 30px rgba(0,0,0,0.5);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* IN-APP NOTIFICATION TOAST BAR */
-    .toast-notification {
-      position: absolute;
-      top: -70px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 380px;
-      background: #ef4444;
-      color: white;
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-align: center;
-      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-      z-index: 200;
-      transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .toast-notification.show {
-      top: 15px;
-    }
-
-    .screen {
-      display: none;
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-    }
-
-    .screen.active { display: flex; }
-
-    .coin-badge {
-      background: #000000;
-      color: #ffffff;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .coin-badge::before { content: '★'; color: var(--coin-yellow); }
-
-    .home-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px;
-      background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
-      text-align: center;
-    }
-
-    .home-top { width: 100%; display: flex; justify-content: flex-end; }
-    .home-logo { font-size: 3.5rem; font-weight: 900; color: var(--path-color); letter-spacing: 4px; }
-    .home-tagline { font-size: 0.9rem; font-weight: 700; color: #64748b; letter-spacing: 2px; }
-
-    .home-illustration {
-      width: min(35vw, 130px);
-      height: min(35vw, 130px);
-      background: var(--grid-bg);
-      border: 3px solid var(--grid-line);
-      border-radius: 20px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      padding: 8px;
-    }
-
-    .home-illustration .mini-cell { background: #fed7aa; border-radius: 6px; }
-    .home-illustration .mini-cell.active-cell { background: var(--path-color); }
-
-    .progress-card {
-      background: #ffffff;
-      border: 2px solid #ffedd5;
-      padding: 12px 25px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 280px;
-    }
-
-    .progress-card-title { font-size: 0.8rem; color: #64748b; font-weight: 700; }
-    .progress-card-level { font-size: 1.6rem; font-weight: 900; color: #1e293b; }
-
-    .home-buttons-group { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
-
-    .btn-play-now {
-      background: var(--path-color);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 30px;
-      font-size: 1.1rem;
-      font-weight: 900;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .btn-home-menu {
-      background: #334155;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 30px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .top-bar {
-      padding: 10px 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #ffffff;
-      border-bottom: 1px solid #f1f5f9;
-      height: 60px;
-      flex-shrink: 0;
-    }
-
-    .icon-btn { background: none; border: none; font-size: 1.8rem; font-weight: bold; color: #334155; cursor: pointer; }
-    .zip-logo-img { font-size: 1.6rem; font-weight: 900; color: var(--path-color); line-height: 1; }
-    .level-subtitle { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
-
-    .jump-level-box { padding: 8px 15px; background: #f8fafc; display: flex; gap: 8px; border-bottom: 1px solid #e2e8f0; }
-    .jump-level-box input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; }
-    .jump-level-box button { background: var(--path-color); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
-
-    .level-container { flex: 1; overflow-y: auto; padding: 12px; }
-    .level-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-
-    .btn-level-select {
-      background: var(--card-purple);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 0;
-      font-size: 0.9rem;
-      font-weight: bold;
-    }
-    .btn-level-select.locked { background: var(--card-locked); opacity: 0.6; }
-
-    .pagination-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: #ffffff; border-top: 1px solid #e2e8f0; }
-    .pagination-bar button { background: #334155; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; }
-
-    .game-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; overflow: hidden; }
-
-    .grid-container {
-      position: relative;
-      background: var(--grid-bg);
-      border: 3px solid var(--grid-line);
-      border-radius: 12px;
-      overflow: hidden;
-      max-width: calc(100vw - 30px);
-      max-height: calc(100dvh - 220px);
-    }
-
-    .grid-board { display: grid; touch-action: none; position: relative; z-index: 2; }
-    .svg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-
-    .cell {
-      box-sizing: border-box;
-      border: 1px solid var(--grid-line);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .cell.visited { background-color: rgba(168, 85, 151, 0.15) !important; }
-
-    .num-badge {
-      width: min(70%, 34px);
-      height: min(70%, 34px);
-      background-color: var(--circle-green);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: min(3.8vw, 1rem);
-      z-index: 10;
-      border: 2px solid #ffffff;
-    }
-
-    .action-container { display: flex; gap: 12px; padding: 10px 15px; }
-    .btn-clean { flex: 1; background: var(--btn-cyan); color: white; border: none; border-radius: 20px; padding: 10px 16px; font-weight: 800; display: flex; justify-content: space-between; }
-    .btn-share { flex: 1; background: var(--btn-orange); color: white; border: none; border-radius: 20px; padding: 10px 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; }
-
-    .ad-banner { background: #ffffff; padding: 6px 15px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
-
-    .modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; }
-    .modal.active { display: flex; }
-    .modal-card { background: white; padding: 20px; border-radius: 18px; text-align: center; width: 80%; }
-    .btn-next { background: var(--path-color); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 12px; width: 100%; }
-  </style>
-</head>
-<body>
-
-  <div class="mobile-frame">
-    
-    <!-- NOTIFICATION TOAST BANNER -->
-    <div id="toast-banner" class="toast-notification">
-      <span>⚠️</span>
-      <span id="toast-msg">Level Incomplete! Path must end on the last number.</span>
-    </div>
-
-    <div id="home-screen" class="screen active">
-      <div class="home-body">
-        <div class="home-top">
-          <div class="coin-badge coin-display">322</div>
-        </div>
-        <div>
-          <div class="home-logo">ZIP</div>
-          <div class="home-tagline">PATH PUZZLE GAME</div>
-        </div>
-        <div class="home-illustration">
-          <div class="mini-cell active-cell"></div>
-          <div class="mini-cell active-cell"></div>
-          <div class="mini-cell"></div>
-          <div class="mini-cell"></div>
-          <div class="mini-cell active-cell"></div>
-          <div class="mini-cell active-cell"></div>
-          <div class="mini-cell"></div>
-          <div class="mini-cell"></div>
-          <div class="mini-cell active-cell"></div>
-        </div>
-        <div class="progress-card">
-          <div class="progress-card-title">Current Level</div>
-          <div class="progress-card-level" id="home-level-label">Level 1</div>
-        </div>
-        <div class="home-buttons-group">
-          <button class="btn-play-now" id="home-play-btn">
-            <span>PLAY NOW</span>
-            <span>▶</span>
-          </button>
-          <button class="btn-home-menu" id="home-menu-btn">SELECT LEVEL ☰</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="menu-screen" class="screen">
-      <div class="top-bar">
-        <button class="icon-btn" id="menu-back-btn">‹</button>
-        <div style="font-weight: bold; font-size: 1rem;">Select Level</div>
-        <div class="coin-badge coin-display">322</div>
-      </div>
-      <div class="jump-level-box">
-        <input type="number" id="jump-input" placeholder="Enter Level (e.g. 105)" min="1">
-        <button id="jump-btn">Go</button>
-      </div>
-      <div class="level-container">
-        <div id="level-grid-menu" class="level-grid"></div>
-      </div>
-      <div class="pagination-bar">
-        <button id="prev-page-btn">‹ Prev</button>
-        <span id="page-info-label" style="font-weight:bold; font-size:0.8rem;">Page 1</span>
-        <button id="next-page-btn">Next ›</button>
-      </div>
-    </div>
-
-    <div id="game-screen" class="screen">
-      <div class="top-bar">
-        <button class="icon-btn" id="open-menu-btn">‹</button>
-        <div style="text-align:center;">
-          <div class="zip-logo-img">ZIP</div>
-          <div class="level-subtitle" id="level-display">Level 1</div>
-        </div>
-        <div class="coin-badge coin-display">322</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>ZIP Path Puzzle Game - Hardcore Edition</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="mobile-frame">
+      <!-- NOTIFICATION TOAST BANNER -->
+      <div id="toast-banner" class="toast-notification">
+        <span>⚠️</span>
+        <span id="toast-msg"
+          >Level Incomplete! Path must end on the last number.</span
+        >
       </div>
 
-      <div class="game-body">
-        <div class="grid-container" id="grid-container">
-          <svg class="svg-layer" id="svg-path-layer"></svg>
-          <div id="grid" class="grid-board"></div>
-        </div>
-      </div>
-
-      <div class="action-container">
-        <button class="btn-clean" id="clean-btn">
-          <span>Clean</span>
-          <span style="font-size:0.8rem;">8 ★</span>
-        </button>
-        <button class="btn-share" onclick="showToast('Link copied to clipboard!')">
-          <span>➔</span>
-          <span>Share</span>
-        </button>
-      </div>
-
-      <div class="ad-banner">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div style="background:var(--coin-yellow); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:0.75rem;">★</div>
+      <!-- HOME SCREEN -->
+      <div id="home-screen" class="screen active">
+        <div class="home-body">
+          <div class="home-top">
+            <div class="coin-badge coin-display">322</div>
+          </div>
           <div>
-            <div style="font-weight: bold; font-size: 0.75rem;">Remove ads</div>
-            <div style="font-size: 0.65rem; color: #64748b;">Get rid of ads forever for $2.99</div>
+            <div class="home-logo">ZIP</div>
+            <div class="home-tagline">PATH PUZZLE GAME</div>
+          </div>
+          <div class="home-illustration">
+            <div class="mini-cell active-cell"></div>
+            <div class="mini-cell active-cell"></div>
+            <div class="mini-cell"></div>
+            <div class="mini-cell"></div>
+            <div class="mini-cell active-cell"></div>
+            <div class="mini-cell active-cell"></div>
+            <div class="mini-cell"></div>
+            <div class="mini-cell"></div>
+            <div class="mini-cell active-cell"></div>
+          </div>
+          <div class="progress-card">
+            <div class="progress-card-title">Current Level</div>
+            <div class="progress-card-level" id="home-level-label">Level 1</div>
+          </div>
+          <div class="home-buttons-group">
+            <button class="btn-play-now" id="home-play-btn">
+              <span>PLAY NOW</span>
+              <span>▶</span>
+            </button>
+            <button class="btn-home-menu" id="home-menu-btn">
+              SELECT LEVEL ☰
+            </button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div id="win-modal" class="modal">
-      <div class="modal-card">
-        <h2 style="color:var(--path-color)">Level Cleared! 🎉</h2>
-        <p style="margin-top:8px; font-weight: 600; font-size:0.9rem;" id="win-msg">+10 Coins Earned!</p>
-        <button class="btn-next" id="next-lvl-btn">Next Level ➔</button>
+      <!-- LEVEL MENU SCREEN -->
+      <div id="menu-screen" class="screen">
+        <div class="top-bar">
+          <button class="icon-btn" id="menu-back-btn">‹</button>
+          <div style="font-weight: bold; font-size: 1rem">Select Level</div>
+          <div class="coin-badge coin-display">322</div>
+        </div>
+        <div class="jump-level-box">
+          <input
+            type="number"
+            id="jump-input"
+            placeholder="Enter Level (e.g. 105)"
+            min="1"
+          />
+          <button id="jump-btn">Go</button>
+        </div>
+        <div class="level-container">
+          <div id="level-grid-menu" class="level-grid"></div>
+        </div>
+        <div class="pagination-bar">
+          <button id="prev-page-btn">‹ Prev</button>
+          <span
+            id="page-info-label"
+            style="font-weight: bold; font-size: 0.8rem"
+            >Page 1</span
+          >
+          <button id="next-page-btn">Next ›</button>
+        </div>
+      </div>
+
+      <!-- GAME PLAY SCREEN -->
+      <div id="game-screen" class="screen">
+        <div class="top-bar">
+          <button class="icon-btn" id="open-menu-btn">‹</button>
+          <div style="text-align: center">
+            <div class="zip-logo-img">ZIP</div>
+            <div class="level-subtitle" id="level-display">Level 1</div>
+          </div>
+          <div class="coin-badge coin-display">322</div>
+        </div>
+
+        <div class="game-body">
+          <div class="grid-container" id="grid-container">
+            <svg class="svg-layer" id="svg-path-layer"></svg>
+            <div id="grid" class="grid-board"></div>
+          </div>
+        </div>
+
+        <div class="action-container">
+          <button class="btn-clean" id="clean-btn">
+            <span>Clean</span>
+            <span style="font-size: 0.8rem">8 ★</span>
+          </button>
+          <button
+            class="btn-share"
+            onclick="showToast('Link copied to clipboard!')"
+          >
+            <span>➔</span>
+            <span>Share</span>
+          </button>
+        </div>
+
+        <div class="ad-banner">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <div
+              style="
+                background: var(--coin-yellow);
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 0.75rem;
+              "
+            >
+              ★
+            </div>
+            <div>
+              <div style="font-weight: bold; font-size: 0.75rem">
+                Remove ads
+              </div>
+              <div style="font-size: 0.65rem; color: #64748b">
+                Get rid of ads forever for $2.99
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WIN MODAL -->
+      <div id="win-modal" class="modal">
+        <div class="modal-card">
+          <h2 style="color: var(--path-color)">Level Cleared! 🎉</h2>
+          <p
+            style="margin-top: 8px; font-weight: 600; font-size: 0.9rem"
+            id="win-msg"
+          >
+            +10 Coins Earned!
+          </p>
+          <button class="btn-next" id="next-lvl-btn">Next Level ➔</button>
+        </div>
       </div>
     </div>
 
-  </div>
-
-  <script>
-    let coins = parseInt(localStorage.getItem('zip_coins')) || 322;
-    let currentLevel = parseInt(localStorage.getItem('zip_current_level')) || 1;
-    let highestUnlocked = parseInt(localStorage.getItem('zip_highest_unlocked')) || 1;
-    let savedPaths = JSON.parse(localStorage.getItem('zip_saved_paths')) || {};
-    let menuPage = 1;
-    const levelsPerPage = 60;
-    let toastTimeout = null;
-
-    // CUSTOM TOAST NOTIFICATION FUNCTION
-    function showToast(text) {
-      const toast = document.getElementById('toast-banner');
-      document.getElementById('toast-msg').innerText = text;
-      toast.classList.add('show');
-
-      clearTimeout(toastTimeout);
-      toastTimeout = setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3200);
-    }
-
-    function updateCoins(amount) {
-      coins += amount;
-      if (coins < 0) coins = 0;
-      localStorage.setItem('zip_coins', coins);
-      document.querySelectorAll('.coin-display').forEach(el => el.innerText = coins);
-    }
-
-    function saveCurrentPath() {
-      savedPaths[currentLevel] = path;
-      localStorage.setItem('zip_saved_paths', JSON.stringify(savedPaths));
-    }
-
-    function mulberry32(a) {
-      return function() {
-        var t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-      };
-    }
-
-    function generateSolvableLevel(lvl) {
-      const rand = mulberry32(lvl * 123456 + 789);
-      let size = 4;
-      if (lvl > 10) size = 5;
-      if (lvl > 50) size = 6;
-      if (lvl > 150) size = 7;
-
-      const total = size * size;
-      let fullPath = [];
-      let visited = Array(size).fill(0).map(() => Array(size).fill(false));
-
-      function dfs(r, c) {
-        fullPath.push({ r, c });
-        visited[r][c] = true;
-        if (fullPath.length === total) return true;
-
-        let dirs = [{ r: r - 1, c }, { r: r + 1, c }, { r, c: c - 1 }, { r, c: c + 1 }];
-        dirs.sort(() => rand() - 0.5);
-
-        for (let d of dirs) {
-          if (d.r >= 0 && d.r < size && d.c >= 0 && d.c < size && !visited[d.r][d.c]) {
-            if (dfs(d.r, d.c)) return true;
-          }
-        }
-        fullPath.pop();
-        visited[r][c] = false;
-        return false;
-      }
-
-      dfs(Math.floor(rand() * size), Math.floor(rand() * size));
-
-      if (fullPath.length < total) {
-        fullPath = [];
-        for (let r = 0; r < size; r++) {
-          if (r % 2 === 0) {
-            for (let c = 0; c < size; c++) fullPath.push({ r, c });
-          } else {
-            for (let c = size - 1; c >= 0; c--) fullPath.push({ r, c });
-          }
-        }
-      }
-
-      let numCheckpoints = size === 4 ? 3 : (size === 5 ? 4 : (size === 6 ? 5 : 6));
-      if (lvl > 300) numCheckpoints = Math.min(8, numCheckpoints + 2);
-
-      const checkpoints = {};
-      const step = Math.floor((total - 1) / (numCheckpoints - 1));
-
-      for (let i = 0; i < numCheckpoints; i++) {
-        let idx = i === numCheckpoints - 1 ? total - 1 : i * step;
-        const cell = fullPath[idx];
-        checkpoints[`${cell.r},${cell.c}`] = i + 1;
-      }
-
-      return { size, checkpoints, autoSolution: fullPath };
-    }
-
-    let gridCols = 4;
-    let path = [];
-    let isDragging = false;
-    let checkpoints = {};
-    let totalCells = 16;
-    let maxCheckpoint = 1;
-    let cellSize = 60;
-
-    function switchScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-    }
-
-    function updateHomeUI() {
-      document.getElementById('home-level-label').innerText = `Level ${currentLevel}`;
-      updateCoins(0);
-    }
-
-    function calculateCellSize() {
-      const availWidth = window.innerWidth > 430 ? 400 : window.innerWidth - 30;
-      const availHeight = window.innerHeight - 230;
-      const sizeBasedOnWidth = Math.floor(availWidth / gridCols);
-      const sizeBasedOnHeight = Math.floor(availHeight / gridCols);
-      return Math.min(sizeBasedOnWidth, sizeBasedOnHeight);
-    }
-
-    function startLevel(lvl) {
-      if (lvl < 1) lvl = 1;
-      currentLevel = lvl;
-      localStorage.setItem('zip_current_level', currentLevel);
-
-      const data = generateSolvableLevel(lvl);
-      gridCols = data.size;
-      checkpoints = data.checkpoints;
-      totalCells = gridCols * gridCols;
-      maxCheckpoint = Math.max(...Object.values(checkpoints), 1);
-
-      document.getElementById('level-display').innerText = `Level ${lvl}`;
-
-      if (savedPaths[currentLevel] && savedPaths[currentLevel].length > 0) {
-        path = [...savedPaths[currentLevel]];
-      } else {
-        path = [];
-      }
-
-      isDragging = false;
-      cellSize = calculateCellSize();
-
-      const gridElem = document.getElementById('grid');
-      gridElem.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
-      gridElem.style.gridTemplateRows = `repeat(${gridCols}, ${cellSize}px)`;
-      gridElem.innerHTML = '';
-
-      for (let r = 0; r < gridCols; r++) {
-        for (let c = 0; c < gridCols; c++) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          cell.dataset.r = r;
-          cell.dataset.c = c;
-
-          const key = `${r},${c}`;
-          if (checkpoints[key]) {
-            const numBadge = document.createElement('div');
-            numBadge.className = 'num-badge';
-            numBadge.innerText = checkpoints[key];
-            cell.appendChild(numBadge);
-          }
-
-          gridElem.appendChild(cell);
-        }
-      }
-
-      switchScreen('game-screen');
-      updateCoins(0);
-      updateUI(false);
-    }
-
-    function tryAddToPath(r, c) {
-      const key = `${r},${c}`;
-      const cellVal = checkpoints[key] || null;
-
-      if (path.length === 0) {
-        if (cellVal === 1) { 
-          path.push({ r, c }); 
-          saveCurrentPath();
-          return true; 
-        }
-        return false;
-      }
-
-      if (path.some(p => p.r === r && p.c === c)) {
-        return false; 
-      }
-
-      const head = path[path.length - 1];
-      if (Math.abs(head.r - r) + Math.abs(head.c - c) !== 1) return false;
-
-      if (cellVal !== null) {
-        const hitCheckpoints = path.map(p => checkpoints[`${p.r},${p.c}`]).filter(Boolean);
-        const currentHighest = hitCheckpoints.length > 0 ? Math.max(...hitCheckpoints) : 1;
-        if (cellVal !== currentHighest + 1) return false;
-      }
-
-      path.push({ r, c });
-      saveCurrentPath();
-      return true;
-    }
-
-    function drawSVGPath() {
-      const svg = document.getElementById('svg-path-layer');
-      svg.innerHTML = '';
-
-      if (path.length === 0) return;
-
-      let pointsStr = '';
-      path.forEach((p, idx) => {
-        const x = p.c * cellSize + cellSize / 2;
-        const y = p.r * cellSize + cellSize / 2;
-        pointsStr += `${x},${y} `;
-
-        if (idx === 0) {
-          const startCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          startCircle.setAttribute('cx', x);
-          startCircle.setAttribute('cy', y);
-          startCircle.setAttribute('r', cellSize * 0.22);
-          startCircle.setAttribute('fill', '#a85597');
-          svg.appendChild(startCircle);
-        }
-        if (idx === path.length - 1 && path.length > 1) {
-          const endCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          endCircle.setAttribute('cx', x);
-          endCircle.setAttribute('cy', y);
-          endCircle.setAttribute('r', cellSize * 0.18);
-          endCircle.setAttribute('fill', '#f97316');
-          svg.appendChild(endCircle);
-        }
-      });
-
-      if (path.length > 1) {
-        const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        polyline.setAttribute('points', pointsStr.trim());
-        polyline.setAttribute('fill', 'none');
-        polyline.setAttribute('stroke', '#a85597');
-        polyline.setAttribute('stroke-width', cellSize * 0.35);
-        polyline.setAttribute('stroke-linecap', 'round');
-        polyline.setAttribute('stroke-linejoin', 'round');
-        svg.insertBefore(polyline, svg.firstChild);
-      }
-    }
-
-    function updateUI(checkWin = true) {
-      document.querySelectorAll('.cell').forEach(c => c.classList.remove('visited'));
-
-      path.forEach((p) => {
-        const elem = document.querySelector(`[data-r="${p.r}"][data-c="${p.c}"]`);
-        if (elem) elem.classList.add('visited');
-      });
-
-      drawSVGPath();
-
-      if (checkWin && path.length === totalCells) {
-        const lastCell = path[path.length - 1];
-        const lastCellKey = `${lastCell.r},${lastCell.c}`;
-        const lastCellNum = checkpoints[lastCellKey];
-
-        const hitCheckpoints = path.map(p => checkpoints[`${p.r},${p.c}`]).filter(Boolean);
-
-        // Win check
-        if (hitCheckpoints.length === maxCheckpoint && lastCellNum === maxCheckpoint) {
-          if (currentLevel >= highestUnlocked) {
-            highestUnlocked = currentLevel + 1;
-            localStorage.setItem('zip_highest_unlocked', highestUnlocked);
-            updateCoins(10);
-            document.getElementById('win-msg').innerText = `Level ${currentLevel} Cleared! +10 Coins!`;
-          } else {
-            document.getElementById('win-msg').innerText = `Level ${currentLevel} Solved!`;
-          }
-          document.getElementById('win-modal').classList.add('active');
-        } else {
-          // Dynamic Notification Pop-Up
-          showToast(`Incomplete Level! Line must end on number badge (${maxCheckpoint}). Clean to retry.`);
-        }
-      }
-    }
-
-    function renderMenu() {
-      const menuGrid = document.getElementById('level-grid-menu');
-      menuGrid.innerHTML = '';
-
-      const startLvl = (menuPage - 1) * levelsPerPage + 1;
-      const endLvl = startLvl + levelsPerPage - 1;
-
-      for (let i = startLvl; i <= endLvl; i++) {
-        const btn = document.createElement('button');
-        const isUnlocked = i <= highestUnlocked;
-        btn.className = `btn-level-select ${!isUnlocked ? 'locked' : ''}`;
-        btn.innerText = i;
-
-        if (isUnlocked) {
-          btn.addEventListener('click', () => startLevel(i));
-        }
-
-        menuGrid.appendChild(btn);
-      }
-
-      document.getElementById('page-info-label').innerText = `Levels ${startLvl} - ${endLvl}`;
-    }
-
-    const gridElem = document.getElementById('grid');
-    gridElem.addEventListener('pointerdown', (e) => {
-      const cell = e.target.closest('.cell');
-      if (!cell) return;
-      isDragging = true;
-      tryAddToPath(parseInt(cell.dataset.r), parseInt(cell.dataset.c));
-      updateUI(true);
-    });
-
-    window.addEventListener('pointermove', (e) => {
-      if (!isDragging) return;
-      const target = document.elementFromPoint(e.clientX, e.clientY);
-      if (!target) return;
-      const cell = target.closest('.cell');
-      if (cell && tryAddToPath(parseInt(cell.dataset.r), parseInt(cell.dataset.c))) {
-        updateUI(true);
-      }
-    });
-
-    window.addEventListener('pointerup', () => isDragging = false);
-
-    document.getElementById('clean-btn').addEventListener('click', () => {
-      if (coins >= 8) {
-        updateCoins(-8);
-        path = [];
-        saveCurrentPath();
-        updateUI(false);
-        showToast("Board cleaned successfully!");
-      } else {
-        showToast("Not enough coins to Clean! Need 8 ★");
-      }
-    });
-
-    document.getElementById('next-lvl-btn').addEventListener('click', () => {
-      document.getElementById('win-modal').classList.remove('active');
-      startLevel(currentLevel + 1);
-    });
-
-    document.getElementById('home-play-btn').addEventListener('click', () => startLevel(currentLevel));
-    document.getElementById('home-menu-btn').addEventListener('click', () => {
-      menuPage = Math.ceil(highestUnlocked / levelsPerPage) || 1;
-      renderMenu();
-      switchScreen('menu-screen');
-    });
-
-    document.getElementById('open-menu-btn').addEventListener('click', () => {
-      updateHomeUI();
-      switchScreen('home-screen');
-    });
-
-    document.getElementById('menu-back-btn').addEventListener('click', () => {
-      updateHomeUI();
-      switchScreen('home-screen');
-    });
-
-    document.getElementById('prev-page-btn').addEventListener('click', () => {
-      if (menuPage > 1) { menuPage--; renderMenu(); }
-    });
-
-    document.getElementById('next-page-btn').addEventListener('click', () => {
-      menuPage++; renderMenu();
-    });
-
-    document.getElementById('jump-btn').addEventListener('click', () => {
-      const targetLvl = parseInt(document.getElementById('jump-input').value);
-      if (targetLvl && targetLvl > 0) {
-        if (targetLvl <= highestUnlocked) {
-          startLevel(targetLvl);
-        } else {
-          showToast(`Level ${targetLvl} is locked!`);
-        }
-      }
-    });
-
-    window.addEventListener('resize', () => {
-      if (document.getElementById('game-screen').classList.contains('active')) {
-        cellSize = calculateCellSize();
-        const gridElem = document.getElementById('grid');
-        gridElem.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
-        gridElem.style.gridTemplateRows = `repeat(${gridCols}, ${cellSize}px)`;
-        updateUI(false);
-      }
-    });
-
-    updateHomeUI();
-  </script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
