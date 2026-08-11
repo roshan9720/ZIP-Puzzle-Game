@@ -72,54 +72,45 @@
       </div>
     </div>
 
-    <!-- GAME PLAY SCREEN -->
-    <div class="top-bar">
-        <button class="icon-btn" id="open-menu-btn">‹</button>
-        <div class="top-bar-center">
-        <div class="zip-logo-img">ZIP</div>
-        <div class="level-subtitle" id="level-display">Level 1</div>
+          <!-- GAME PLAY SCREEN -->
+      <div id="game-screen" class="screen">
+        <div class="top-bar">
+          <button class="icon-btn" id="open-menu-btn" type="button">‹</button>
+          <div class="top-bar-center">
+            <div class="zip-logo-img">ZIP</div>
+            <div class="level-subtitle" id="level-display">Level 1</div>
+          </div>
+          <div class="coin-badge coin-display">322</div>
         </div>
-         <div class="coin-badge coin-display">322</div>
-    </div>
-    
-    <div id="game-screen" class="screen">
-      <div class="top-bar">
-        <button class="icon-btn" id="open-menu-btn">‹</button>
-        <div style="text-align:center;">
-          <div class="zip-logo-img">ZIP</div>
-          <div class="level-subtitle" id="level-display">Level 1</div>
+      
+        <div class="game-body">
+          <div class="grid-container" id="grid-container">
+            <svg class="svg-layer" id="svg-path-layer"></svg>
+            <div id="grid" class="grid-board"></div>
+          </div>
         </div>
-        <div class="coin-badge coin-display">322</div>
-      </div>
-
-      <div class="game-body">
-        <div class="grid-container" id="grid-container">
-          <svg class="svg-layer" id="svg-path-layer"></svg>
-          <div id="grid" class="grid-board"></div>
+      
+        <div class="action-container">
+          <button class="btn-clean" id="clean-btn" type="button">
+            <span>Clean</span>
+            <span style="font-size:0.8rem;">8 ★</span>
+          </button>
+          <button class="btn-share" id="share-btn" type="button">
+            <span>➔</span>
+            <span>Share</span>
+          </button>
         </div>
-      </div>
-
-      <div class="action-container">
-        <button class="btn-clean" id="clean-btn">
-          <span>Clean</span>
-          <span style="font-size:0.8rem;">8 ★</span>
-        </button>
-        <button class="btn-share" id="share-btn">
-          <span>➔</span>
-          <span>Share</span>
-        </button>
-      </div>
-
-      <div class="ad-banner">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div style="background:var(--coin-yellow); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:0.75rem;">★</div>
-          <div>
-            <div style="font-weight: bold; font-size: 0.75rem;">Remove ads</div>
-            <div style="font-size: 0.65rem; color: #64748b;">Get rid of ads forever for $2.99</div>
+      
+        <div class="ad-banner">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="background:var(--coin-yellow); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:0.75rem;">★</div>
+            <div>
+              <div style="font-weight: bold; font-size: 0.75rem;">Remove ads</div>
+              <div style="font-size: 0.65rem; color: #64748b;">Get rid of ads forever for $2.99</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- WIN MODAL -->
     <div id="win-modal" class="modal">
