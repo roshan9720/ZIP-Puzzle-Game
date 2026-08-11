@@ -1,17 +1,64 @@
+let coins = parseInt(localStorage.getItem('zip_coins')) || 322;
+let currentLevel = parseInt(localStorage.getItem('zip_current_level')) || 1;
+let highestUnlocked = parseInt(localStorage.getItem('zip_highest_unlocked')) || 1;
+let savedPaths = JSON.parse(localStorage.getItem('zip_saved_paths')) || {};
+let menuPage = 1;
+const levelsPerPage = 60;
+let toastTimeout = null;
+
+let gridCols = 4;
+let path = [];
+let isDragging = false;
+let checkpoints = {};
+let walls = new Set();
+let totalCells = 16;
+let maxCheckpoint = 1;
+let cellSize = 60;
+
+function showToast(text) {
+  const toast = document.getElementById('toast-banner');
+  document.getElementById('toast-msg').innerText = text;
+  toast.classList.add('show');
+
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3200);
+}
+
+function updateCoins(amount) {
+  coins += amount;
+  if (coins < 0) coins = 0;
+  localStorage.setItem('zip_coins', coins);
+  document.querySelectorAll('.coin-display').forEach(el => el.innerText = coins);
+}
+
+function saveCurrentPath() {
+  savedPaths[currentLevel] = path;
+  localStorage.setItem('zip_saved_paths', JSON.stringify(savedPaths));
+}
+
+function getSeededRandom(lvl) {
+  let seed = (lvl ^ 0x6D2B79F5) + Math.imul(lvl, 0x1B873593);
+  return function() {
+    seed = Math.imul(seed ^ (seed >>> 15), seed | 1);
+    seed ^= seed + Math.imul(seed ^ (seed >>> 7), seed | 61);
+    return ((seed ^ (seed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function generateSolvableLevel(lvl) {
   const rand = getSeededRandom(lvl);
   
-  // 1. Grid Size progression based on difficulty
   let size = 4;
-  if (lvl >= 6) size = 5;      // Medium: 5x5
-  if (lvl >= 21) size = 6;     // Hard: 6x6
-  if (lvl >= 51) size = 7;     // Expert: 7x7
+  if (lvl >= 6) size = 5;
+  if (lvl >= 21) size = 6;
+  if (lvl >= 51) size = 7;
 
   const total = size * size;
   let fullPath = [];
   let visited = Array(size).fill(0).map(() => Array(size).fill(false));
 
-  // DFS to generate a valid solution path
   function dfs(r, c) {
     fullPath.push({ r, c });
     visited[r][c] = true;
@@ -49,23 +96,21 @@ function generateSolvableLevel(lvl) {
     }
   }
 
-  // 2. MIXED & RANDOMIZED NUMBER COUNT (Checkpoint Mix Engine)
+  // MIXED NUMBERS GENERATION
   let minNumbers = 2;
-  let maxNumbers = Math.min(14, Math.floor(total * 0.6)); // Level grid size ke mutabiq cap
+  let maxNumbers = Math.min(14, Math.floor(total * 0.6));
 
   if (lvl <= 3) {
     minNumbers = 2;
-    maxNumbers = 3; // Initial starting levels stay simple
+    maxNumbers = 3;
   } else if (lvl <= 10) {
     minNumbers = 2;
     maxNumbers = 6;
   } else {
     minNumbers = 3;
-    // Mix count ranges randomly depending on level difficulty cap
     maxNumbers = Math.min(16, 4 + Math.floor(lvl / 5));
   }
 
-  // Pick a random count between minNumbers and maxNumbers for THIS level
   let numCheckpoints = Math.floor(rand() * (maxNumbers - minNumbers + 1)) + minNumbers;
 
   const checkpoints = {};
@@ -77,7 +122,7 @@ function generateSolvableLevel(lvl) {
     checkpoints[`${cell.r},${cell.c}`] = i + 1;
   }
 
-  // 3. WALLS / OBSTACLES PLACEMENT
+  // WALLS GENERATION
   const pathSet = new Set();
   for (let i = 0; i < fullPath.length - 1; i++) {
     let a = `${fullPath[i].r},${fullPath[i].c}`;
@@ -116,3 +161,351 @@ function generateSolvableLevel(lvl) {
 
   return { size, checkpoints, walls };
 }
+
+function switchScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+function updateHomeUI() {
+  document.getElementById('home-level-label').innerText = `Level ${currentLevel}`;
+  updateCoins(0);
+}
+
+function calculateCellSize() {
+  const availWidth = window.innerWidth > 430 ? 400 : window.innerWidth - 30;
+  const availHeight = window.innerHeight - 230;
+  const sizeBasedOnWidth = Math.floor(availWidth / gridCols);
+  const sizeBasedOnHeight = Math.floor(availHeight / gridCols);
+  return Math.min(sizeBasedOnWidth, sizeBasedOnHeight);
+}
+
+function isWallBetween(r1, c1, r2, c2) {
+  let a = `${r1},${c1}`;
+  let b = `${r2},${c2}`;
+  let key = a < b ? `${a}-${b}` : `${b}-${a}`;
+  return walls.has(key);
+}
+
+function startLevel(lvl) {
+  if (lvl < 1) lvl = 1;
+  currentLevel = lvl;
+  localStorage.setItem('zip_current_level', currentLevel);
+
+  const data = generateSolvableLevel(lvl);
+  gridCols = data.size;
+  checkpoints = data.checkpoints;
+  walls = data.walls;
+  totalCells = gridCols * gridCols;
+  maxCheckpoint = Math.max(...Object.values(checkpoints), 1);
+
+  document.getElementById('level-display').innerText = `Level ${lvl}`;
+
+  if (savedPaths[currentLevel] && savedPaths[currentLevel].length > 0) {
+    path = [...savedPaths[currentLevel]];
+  } else {
+    path = [];
+  }
+
+  isDragging = false;
+  cellSize = calculateCellSize();
+
+  const gridElem = document.getElementById('grid');
+  gridElem.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
+  gridElem.style.gridTemplateRows = `repeat(${gridCols}, ${cellSize}px)`;
+  gridElem.innerHTML = '';
+
+  for (let r = 0; r < gridCols; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      const key = `${r},${c}`;
+      if (checkpoints[key]) {
+        const numBadge = document.createElement('div');
+        numBadge.className = 'num-badge';
+        numBadge.innerText = checkpoints[key];
+        cell.appendChild(numBadge);
+      }
+
+      gridElem.appendChild(cell);
+    }
+  }
+
+  switchScreen('game-screen');
+  updateCoins(0);
+  updateUI(false);
+}
+
+function tryAddToPath(r, c) {
+  const key = `${r},${c}`;
+  const cellVal = checkpoints[key] || null;
+
+  if (path.length === 0) {
+    if (cellVal === 1) { 
+      path.push({ r, c }); 
+      saveCurrentPath();
+      return true; 
+    }
+    return false;
+  }
+
+  if (path.some(p => p.r === r && p.c === c)) {
+    return false; 
+  }
+
+  const head = path[path.length - 1];
+  if (Math.abs(head.r - r) + Math.abs(head.c - c) !== 1) return false;
+
+  if (isWallBetween(head.r, head.c, r, c)) {
+    return false;
+  }
+
+  if (cellVal !== null) {
+    const hitCheckpoints = path.map(p => checkpoints[`${p.r},${p.c}`]).filter(Boolean);
+    const currentHighest = hitCheckpoints.length > 0 ? Math.max(...hitCheckpoints) : 1;
+    if (cellVal !== currentHighest + 1) return false;
+  }
+
+  path.push({ r, c });
+  saveCurrentPath();
+  return true;
+}
+
+function drawSVGPathAndWalls() {
+  const svg = document.getElementById('svg-path-layer');
+  svg.innerHTML = '';
+
+  walls.forEach(wallKey => {
+    let parts = wallKey.split('-');
+    let [r1, c1] = parts[0].split(',').map(Number);
+    let [r2, c2] = parts[1].split(',').map(Number);
+
+    let wallLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    
+    if (r1 === r2) {
+      let x = Math.max(c1, c2) * cellSize;
+      let y1 = r1 * cellSize + 2;
+      let y2 = (r1 + 1) * cellSize - 2;
+      wallLine.setAttribute('x1', x);
+      wallLine.setAttribute('y1', y1);
+      wallLine.setAttribute('x2', x);
+      wallLine.setAttribute('y2', y2);
+    } else {
+      let y = Math.max(r1, r2) * cellSize;
+      let x1 = c1 * cellSize + 2;
+      let x2 = (c1 + 1) * cellSize - 2;
+      wallLine.setAttribute('x1', x1);
+      wallLine.setAttribute('y1', y);
+      wallLine.setAttribute('x2', x2);
+      wallLine.setAttribute('y2', y);
+    }
+
+    wallLine.setAttribute('stroke', '#ef4444');
+    wallLine.setAttribute('stroke-width', '6');
+    wallLine.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(wallLine);
+  });
+
+  if (path.length === 0) return;
+
+  let pointsStr = '';
+  path.forEach((p, idx) => {
+    const x = p.c * cellSize + cellSize / 2;
+    const y = p.r * cellSize + cellSize / 2;
+    pointsStr += `${x},${y} `;
+
+    if (idx === 0) {
+      const startCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      startCircle.setAttribute('cx', x);
+      startCircle.setAttribute('cy', y);
+      startCircle.setAttribute('r', cellSize * 0.22);
+      startCircle.setAttribute('fill', '#a85597');
+      svg.appendChild(startCircle);
+    }
+    if (idx === path.length - 1 && path.length > 1) {
+      const endCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      endCircle.setAttribute('cx', x);
+      endCircle.setAttribute('cy', y);
+      endCircle.setAttribute('r', cellSize * 0.18);
+      endCircle.setAttribute('fill', '#f97316');
+      svg.appendChild(endCircle);
+    }
+  });
+
+  if (path.length > 1) {
+    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('points', pointsStr.trim());
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke', '#a85597');
+    polyline.setAttribute('stroke-width', cellSize * 0.32);
+    polyline.setAttribute('stroke-linecap', 'round');
+    polyline.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(polyline);
+  }
+}
+
+function updateUI(checkWin = true) {
+  document.querySelectorAll('.cell').forEach(c => c.classList.remove('visited'));
+
+  path.forEach((p) => {
+    const elem = document.querySelector(`[data-r="${p.r}"][data-c="${p.c}"]`);
+    if (elem) elem.classList.add('visited');
+  });
+
+  drawSVGPathAndWalls();
+
+  if (checkWin && path.length === totalCells) {
+    const lastCell = path[path.length - 1];
+    const lastCellKey = `${lastCell.r},${lastCell.c}`;
+    const lastCellNum = checkpoints[lastCellKey];
+
+    const hitCheckpoints = path.map(p => checkpoints[`${p.r},${p.c}`]).filter(Boolean);
+
+    if (hitCheckpoints.length === maxCheckpoint && lastCellNum === maxCheckpoint) {
+      if (currentLevel >= highestUnlocked) {
+        highestUnlocked = currentLevel + 1;
+        localStorage.setItem('zip_highest_unlocked', highestUnlocked);
+        updateCoins(10);
+        document.getElementById('win-msg').innerText = `Level ${currentLevel} Cleared! +10 Coins!`;
+      } else {
+        document.getElementById('win-msg').innerText = `Level ${currentLevel} Solved!`;
+      }
+      document.getElementById('win-modal').classList.add('active');
+    } else {
+      showToast(`Incomplete Level! Line must end on number badge (${maxCheckpoint}).`);
+    }
+  }
+}
+
+function renderMenu() {
+  const menuGrid = document.getElementById('level-grid-menu');
+  menuGrid.innerHTML = '';
+
+  const startLvl = (menuPage - 1) * levelsPerPage + 1;
+  const endLvl = startLvl + levelsPerPage - 1;
+
+  for (let i = startLvl; i <= endLvl; i++) {
+    const btn = document.createElement('button');
+    const isUnlocked = i <= highestUnlocked;
+    btn.className = `btn-level-select ${!isUnlocked ? 'locked' : ''}`;
+    btn.innerText = i;
+
+    if (isUnlocked) {
+      btn.addEventListener('click', () => startLevel(i));
+    }
+
+    menuGrid.appendChild(btn);
+  }
+
+  document.getElementById('page-info-label').innerText = `Levels ${startLvl} - ${endLvl}`;
+}
+
+// ==================== UNIVERSAL DRAG & TOUCH CONTROLS ====================
+const gridElem = document.getElementById('grid');
+
+function handleStart(e) {
+  const touch = e.touches ? e.touches[0] : e;
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!target) return;
+  
+  const cell = target.closest('.cell');
+  if (!cell) return;
+  
+  isDragging = true;
+  tryAddToPath(parseInt(cell.dataset.r), parseInt(cell.dataset.c));
+  updateUI(true);
+}
+
+function handleMove(e) {
+  if (!isDragging) return;
+  const touch = e.touches ? e.touches[0] : e;
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!target) return;
+
+  const cell = target.closest('.cell');
+  if (cell && tryAddToPath(parseInt(cell.dataset.r), parseInt(cell.dataset.c))) {
+    updateUI(true);
+  }
+}
+
+function handleEnd() {
+  isDragging = false;
+}
+
+// Mouse Listeners
+gridElem.addEventListener('mousedown', handleStart);
+window.addEventListener('mousemove', handleMove);
+window.addEventListener('mouseup', handleEnd);
+
+// Touch Listeners
+gridElem.addEventListener('touchstart', handleStart, { passive: true });
+window.addEventListener('touchmove', handleMove, { passive: true });
+window.addEventListener('touchend', handleEnd);
+
+// Button Click Handlers
+document.getElementById('clean-btn').addEventListener('click', () => {
+  if (coins >= 8) {
+    updateCoins(-8);
+    path = [];
+    saveCurrentPath();
+    updateUI(false);
+    showToast("Board cleaned successfully!");
+  } else {
+    showToast("Not enough coins to Clean! Need 8 ★");
+  }
+});
+
+document.getElementById('next-lvl-btn').addEventListener('click', () => {
+  document.getElementById('win-modal').classList.remove('active');
+  startLevel(currentLevel + 1);
+});
+
+document.getElementById('home-play-btn').addEventListener('click', () => startLevel(currentLevel));
+document.getElementById('home-menu-btn').addEventListener('click', () => {
+  menuPage = Math.ceil(highestUnlocked / levelsPerPage) || 1;
+  renderMenu();
+  switchScreen('menu-screen');
+});
+
+document.getElementById('open-menu-btn').addEventListener('click', () => {
+  updateHomeUI();
+  switchScreen('home-screen');
+});
+
+document.getElementById('menu-back-btn').addEventListener('click', () => {
+  updateHomeUI();
+  switchScreen('home-screen');
+});
+
+document.getElementById('prev-page-btn').addEventListener('click', () => {
+  if (menuPage > 1) { menuPage--; renderMenu(); }
+});
+
+document.getElementById('next-page-btn').addEventListener('click', () => {
+  menuPage++; renderMenu();
+});
+
+document.getElementById('jump-btn').addEventListener('click', () => {
+  const targetLvl = parseInt(document.getElementById('jump-input').value);
+  if (targetLvl && targetLvl > 0) {
+    if (targetLvl <= highestUnlocked) {
+      startLevel(targetLvl);
+    } else {
+      showToast(`Level ${targetLvl} is locked!`);
+    }
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('game-screen').classList.contains('active')) {
+    cellSize = calculateCellSize();
+    gridElem.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
+    gridElem.style.gridTemplateRows = `repeat(${gridCols}, ${cellSize}px)`;
+    updateUI(false);
+  }
+});
+
+updateHomeUI();
