@@ -73,7 +73,8 @@ body {
   padding: 14px 20px;
   background: transparent;
   position: relative;
-  z-index: 20;
+  z-index: 50; /* Subse upar rahega taaki click miss na ho */
+  pointer-events: auto;
 }
 
 .top-bar-center {
@@ -105,24 +106,27 @@ body {
 
 /* ICON BUTTONS & COIN BADGE */
 .icon-btn {
-  background: #ffffff;
+ background: #ffffff;
   border: 2px solid #e9d5ff;
   border-radius: 50%;
   width: 42px;
   height: 42px;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: bold;
   color: var(--text-dark);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 51;
   box-shadow: 0 2px 5px rgba(0,0,0,0.08);
   transition: transform 0.1s;
 }
 
 .icon-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.90);
 }
 
 .coin-badge {
