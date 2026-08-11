@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { size, checkpoints, walls };
   }
 
-  // --- UPDATED SCREEN NAVIGATION SYSTEM WITH MOBILE BACK SUPPORT ---
+  // --- SCREEN NAVIGATION & HISTORY MANAGEMENT ---
   function switchScreen(screenId, pushHistory = true) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const targetScreen = document.getElementById(screenId);
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Handle Mobile Phone Hardware Back Button
+  // Mobile Hardware Back Button Listener
   window.addEventListener('popstate', () => {
     const activeScreen = document.querySelector('.screen.active');
     if (activeScreen && activeScreen.id !== 'home-screen') {
@@ -471,7 +471,17 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('touchend', handleEnd);
   }
 
-  // --- BUTTON EVENT LISTENERS WITH SAFE NULL CHECKS ---
+  // --- SAFE BACK NAVIGATION FUNCTION ---
+  function goToHomeScreen(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    updateHomeUI();
+    switchScreen('home-screen');
+  }
+
+  // --- BUTTON EVENT LISTENERS ---
   const homePlayBtn = document.getElementById('home-play-btn');
   if (homePlayBtn) {
     homePlayBtn.addEventListener('click', () => startLevel(currentLevel));
@@ -486,21 +496,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const openMenuBtn = document.getElementById('open-menu-btn');
-  if (openMenuBtn) {
-    openMenuBtn.addEventListener('click', () => {
-      updateHomeUI();
-      switchScreen('home-screen');
-    });
-  }
-
-  const menuBackBtn = document.getElementById('menu-back-btn');
-  if (menuBackBtn) {
-    menuBackBtn.addEventListener('click', () => {
-      updateHomeUI();
-      switchScreen('home-screen');
-    });
-  }
+  // Direct Back Buttons Binding (Click + Touch)
+  const backButtons = ['open-menu-btn', 'menu-back-btn'];
+  backButtons.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', goToHomeScreen);
+      btn.addEventListener('touchstart', goToHomeScreen, { passive: false });
+    }
+  });
 
   const prevPageBtn = document.getElementById('prev-page-btn');
   if (prevPageBtn) {
