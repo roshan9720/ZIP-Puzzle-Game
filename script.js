@@ -1,5 +1,14 @@
-document.addEventListener('DOMContentLoaded', () => {
-let coins = parseInt(localStorage.getItem('zip_coins')) || 500;
+Document.addEventListener('DOMContentLoaded', () => {
+let coins = parseInt(localStorage.getItem('zip_coins'));
+if (isNaN(coins)) {
+    coins = 1000; // 500 default + 500 added
+    localStorage.setItem('zip_coins', coins);
+} else if (!localStorage.getItem('zip_500_added')) {
+    coins += 500;
+    localStorage.setItem('zip_500_added', 'true');
+    localStorage.setItem('zip_coins', coins);
+}
+
 let currentLevel = parseInt(localStorage.getItem('zip_current_level')) || 1;
 let highestUnlocked = parseInt(localStorage.getItem('zip_highest_unlocked')) || 1;
 let savedPaths = JSON.parse(localStorage.getItem('zip_saved_paths') || '{}');
@@ -118,5 +127,4 @@ if (lvl <= 3) {
 let numCheckpoints = Math.floor(rand() * (maxNumbers - minNumbers + 1)) + minNumbers;  
 
 const checkpoints = {};
-
-Ye hai js kaha edit kraru
+});
