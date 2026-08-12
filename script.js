@@ -119,4 +119,4 @@ let numCheckpoints = Math.floor(rand() * (maxNumbers - minNumbers + 1)) + minNum
 
 const checkpoints = {};
 
-Ye hai js kaha edit kraru
+
