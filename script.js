@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+  localStorage.removeItem('zip_coins');
+
+  let coins = parseInt(localStorage.getItem('zip_coins')) || 500;
+
+
+document.addEventListener('DOMContentLoaded', () => {
   let coins = parseInt(localStorage.getItem('zip_coins')) || 500;
   let currentLevel = parseInt(localStorage.getItem('zip_current_level')) || 1;
   let highestUnlocked = parseInt(localStorage.getItem('zip_highest_unlocked')) || 1;
