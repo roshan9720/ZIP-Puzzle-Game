@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  let coins = parseInt(localStorage.getItem('zip_coins')) || 322;
+  // --- 1. COINS INITIALIZATION (500 COINS FIX) ---
+  let coins = parseInt(localStorage.getItem('zip_coins'));
+  if (isNaN(coins)) {
+    coins = 500;
+    localStorage.setItem('zip_coins', coins);
+  }
+
   let currentLevel = parseInt(localStorage.getItem('zip_current_level')) || 1;
   let highestUnlocked = parseInt(localStorage.getItem('zip_highest_unlocked')) || 1;
   let savedPaths = JSON.parse(localStorage.getItem('zip_saved_paths') || '{}');
@@ -251,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
             numBadge.innerText = checkpoints[key];
             cell.appendChild(numBadge);
           }
-
           gridElem.appendChild(cell);
         }
       }
@@ -578,6 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // App init
   updateHomeUI();
 });
-                  
+        
