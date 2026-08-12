@@ -1,4 +1,3 @@
-
 /* ==========================================
    GLOBAL VARIABLES & MODERN RESET
    ========================================== */
@@ -121,7 +120,7 @@ html, body {
 }
 
 .coin-badge::before {
-  content: "â˜…";
+  content: "★";
   color: var(--coin-yellow);
   font-size: 1.1rem;
 }
@@ -559,3 +558,5 @@ html, body {
   .mini-cell { width: 38px; height: 38px; }
   .btn-play-now { padding: 14px; font-size: 1.1rem; }
   .btn-home-menu { padding: 12px; font-size: 0.85rem; }
+   }
+     
