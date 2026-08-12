@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const levelsPerPage = 60;
   let toastTimeout = null;
 
+  document.querySelectorAll('.coin-display').forEach(el => {
+    el.innerText = coins;
+});
+
   let gridCols = 4;
   let path = [];
   let isDragging = false;
